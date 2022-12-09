@@ -12,11 +12,11 @@ class App():
         self.screen = pygame.display.set_mode(ScreenSize)
         pygame.display.set_caption(caption)
 
-        self.surface = pygame.image.load('src/assets/document.png').convert()
+        self.surface = pygame.image.load('src/assets/distorted.png').convert()
         self.cpy = self.surface.copy()
 
         #topleft, topright, bottomright, bottomleft
-        points = [[219, 99], [548, 99], [728, 654], [39, 654]]
+        points = [[204, 100], [567, 100], [763, 690], [4, 690]]
         self.corrector = Corrector(points, self.surface)
 
         self.Debug = False
@@ -38,7 +38,6 @@ class App():
                 if event.type == QUIT:
                     pygame.quit()
                     raise SystemExit
-                #debug
 
                 if event.type == KEYDOWN:
                     if self.Debug:

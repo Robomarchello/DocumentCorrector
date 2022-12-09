@@ -21,9 +21,10 @@ class Corrector:
         
         top = self.points[0][1] + yDiff
         left = self.points[0][0] + xDiff
-        bottom = self.points[3][1] + yDiff
-        right = self.points[1][0] + xDiff 
-        self.CorRect = pygame.Rect(left, top, bottom - top, right - left)
+        #bottom = self.points[3][1] + yDiff
+        #right = self.points[1][0] + xDiff 
+        #self.CorRect = pygame.Rect(left, top, bottom - top, right - left)
+        self.CorRect = pygame.Rect(left, top, 512, 512)
         self.corrected = pygame.PixelArray(pygame.Surface(self.CorRect.size))
 
         self.interpPoses = numpy.zeros((self.CorRect.size), list)
