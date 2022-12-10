@@ -1,4 +1,7 @@
-#plan it out, rewrite
+'''
+Maybe web version with file uploading?
+https://pygame-web.github.io/wiki/pygbag-code/
+'''
 import pygame
 from pygame.locals import *
 from pygame.math import Vector2
@@ -8,31 +11,28 @@ import numpy
 class Corrector:
     def __init__(self, points, surface):
         #topleft, topright, bottomright, bottomleft
-        #[79, 47], [522, 82], [688, 721], [245, 681]
         self.points = [Vector2(point) for point in points]
         self.CorRect = pygame.Rect(0, 0, 0, 0)
 
         self.TargetSurf = surface
         self.pixels = pygame.PixelArray(surface)
 
-        #Corrected points
-        xDiff = (self.points[3][0] - self.points[0][0]) // 2
-        yDiff = (self.points[1][1] - self.points[0][1]) // 2
-        
-        top = self.points[0][1] + yDiff
-        left = self.points[0][0] + xDiff
-        #bottom = self.points[3][1] + yDiff
-        #right = self.points[1][0] + xDiff 
-        #self.CorRect = pygame.Rect(left, top, bottom - top, right - left)
-        self.CorRect = pygame.Rect(left, top, 512, 512)
-        self.corrected = pygame.PixelArray(pygame.Surface(self.CorRect.size))
+        topWidth = self.points[1][0] - self.points[0][0]
+        bottomWidth = self.points[2][0] - self.points[3][0]
+        topHeight = self.points[3][1] - self.points[0][1]
+        bottomHeight = self.points[2][1] - self.points[1][1]
 
-        self.interpPoses = numpy.zeros((self.CorRect.size), list)
-        
-        for y in range(self.CorRect.height):
-            for x in range(self.CorRect.width):
-                interpX = x / self.CorRect.width
-                interpY = 1 - (y / self.CorRect.height)
+        self.CorSize = (
+            int((topWidth + bottomWidth) // 2), 
+            int((topHeight + bottomHeight) // 2)
+        )
+
+        self.corrected = pygame.PixelArray(pygame.Surface(self.CorSize))
+        self.interpPoses = numpy.zeros((self.CorSize), list)
+        for y in range(self.CorSize[1]):
+            for x in range(self.CorSize[0]):
+                interpX = x / self.CorSize[0]
+                interpY = 1 - y / self.CorSize[1]
         
                 line = [
                 self.points[3].lerp(self.points[0], interpY),
