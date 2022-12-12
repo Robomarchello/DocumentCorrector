@@ -27,6 +27,9 @@ class Corrector:
             int((topHeight + bottomHeight) // 2)
         )
 
+        maxSize = (960, 540)
+        self.viewSize = []
+
         self.corrected = pygame.PixelArray(pygame.Surface(self.CorSize))
         self.interpPoses = numpy.zeros((self.CorSize), list)
         for y in range(self.CorSize[1]):
