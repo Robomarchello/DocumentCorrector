@@ -66,29 +66,51 @@ class Button:
                 self.clicked = False
 
 
-class ViewPort:
+class Viewport:
     def __init__(self):
+        pass
+
+    def draw(self, screen):
+        pass
+
+    def handle_event(self, event):
         pass
 
 
 class Interface:
+    DarkGrey = pygame.Color(75, 75, 75)
+    SideBarColor = pygame.Color(60, 60, 60)
+    BoundColor = pygame.Color(30, 30, 30) 
     def __init__(self, mouse):
         self.mouse = mouse
         self.surface = pygame.Surface((960, 540))
         
+        self.SideBar = pygame.Rect(700, 0, 260, 540)
+        self.SideBarBound = pygame.Rect(695, 0, 5, 540)
+
         self.font = pygame.font.Font('src/assets/font.ttf', 48)
-        self.Button = Button(350, 250, 215, 70, self.font, 'Select',
+        self.SelectBtn = Button(720, 350, 230, 70, self.font, 'Select File',
+        (30, 30, 30), (65, 65, 65), self.mouse, self.function)
+
+        self.CorrectBtn = Button(720, 450, 230, 70, self.font, 'Correct It',
         (30, 30, 30), (12, 100, 70), self.mouse, self.function)
+
+        self.Viewport = Viewport()
 
     def function(self):
         print('Slava Ukraini!')
 
     def draw(self, screen):
-        self.surface.fill((75, 75, 75))
-        
-        self.Button.draw(self.surface)
+        self.surface.fill(self.DarkGrey)
+        pygame.draw.rect(self.surface, self.SideBarColor, self.SideBar)
 
+        self.SelectBtn.draw(self.surface)
+        self.CorrectBtn.draw(self.surface)
+
+        pygame.draw.rect(self.surface, self.BoundColor, self.SideBarBound)
+        
         screen.blit(self.surface, (0, 0))
 
     def handle_event(self, event):
-        self.Button.handle_event(event)
+        self.SelectBtn.handle_event(event)
+        self.CorrectBtn.handle_event(event)
