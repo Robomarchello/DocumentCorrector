@@ -41,8 +41,7 @@ class Corrector:
 
         diff2 = numpy.subtract(self.points[2], self.points[1])
         rightX = numpy.multiply(diff2[0], y) + self.points[1][0]
-        #rightY = numpy.multiply(diff1[1], y) + self.points[1][1]
-
+        
         leftForX = numpy.repeat(leftX, x.shape[0])
 
         diffX = numpy.subtract(rightX, leftX)

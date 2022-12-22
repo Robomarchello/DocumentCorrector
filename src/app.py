@@ -11,13 +11,13 @@ class App():
     def __init__(self, ScreenSize, caption, fps):
         self.ScreenSize = ScreenSize
         
-        self.screen = pygame.display.set_mode(ScreenSize)
+        self.screen = pygame.display.set_mode(ScreenSize, RESIZABLE)
         pygame.display.set_caption(caption)
 
         self.surface = pygame.image.load('src/assets/distorted.png').convert()
         self.copy = self.surface.copy()
 
-        self.interface = Interface(Mouse)
+        self.interface = Interface()
 
         #topleft, topright, bottomright, bottomleft
         points = [[205, 100], [565, 100], [765, 690], [5, 690]]
@@ -38,9 +38,12 @@ class App():
             self.clock.tick(self.fps)
             screen.fill((255, 255, 255))
 
-            self.corrector.draw(screen)
-            if self.Debug:
-                self.screen.blit(self.copy, (0, 0))
+            #UNCOMMENT WHEN DONE WITH UI
+            #self.corrector.draw(screen)
+            #if self.Debug:
+            #    self.screen.blit(self.copy, (0, 0))
+
+            self.interface.draw(screen)
             
 
             for event in pygame.event.get():
@@ -58,5 +61,4 @@ class App():
                     event_handler.handle_event(event)
 
             Mouse.update()
-
             pygame.display.update()
