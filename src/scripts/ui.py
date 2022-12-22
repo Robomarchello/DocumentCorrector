@@ -64,28 +64,30 @@ class Toolbar:
         
         self.border = pygame.Rect(0, 0, size[0], 42)
 
-        #9, 7
         self.icon = pygame.image.load('src/assets/logoIcon.png').convert_alpha()
         self.iconRect = self.icon.get_rect(topleft=(9, 7))
         
         self.buttonFont = pygame.font.Font('src/assets/font.ttf', 16)
-        self.FileRect = pygame.Rect(50, 5, 100, 32) 
-        self.ChooseFile = Button(self.FileRect, self.buttonFont, 'Choose File',
+        self.FileRect = pygame.Rect(50, 5, 38, 32) 
+        self.ChooseFile = Button(self.FileRect, self.buttonFont, 'Load',
                             self.white, self.BgColor, self.hoverColor, self.load)
 
-        self.SaveRect = pygame.Rect(160, 5, 45, 32)
+        self.SaveRect = pygame.Rect(103, 5, 45, 32)
         self.SaveBtn = Button(self.SaveRect, self.buttonFont, 'Save', self.white,
                               self.BgColor, self.hoverColor, self.save)
 
-        self.CopyRect = pygame.Rect(220, 5, 137, 32)#137
-        self.CopyBtn = Button(self.CopyRect, self.buttonFont, 'Copy To Clipboard',
-                            self.white, self.BgColor, self.hoverColor, self.save)
+        self.CopyRect = pygame.Rect(163, 5, 40, 32)#137
+        self.CopyBtn = Button(self.CopyRect, self.buttonFont, 'Copy',
+                            self.white, self.BgColor, self.hoverColor, self.copy)
 
     def load(self):
         print('load image, partner')
 
     def save(self):
         print('save image, partner')
+
+    def copy(self):
+        print('copy image, partner')
 
     def resize(self, size):
         self.border.width = size[0]
@@ -108,28 +110,106 @@ class Toolbar:
         self.SaveBtn.handle_event(event)
         self.CopyBtn.handle_event(event)
 
+
+class Editor:
+    def __init__(self, ScreenSize):
+        self.ScreenSize = ScreenSize
+        self.HalfSize = (ScreenSize[0] // 2, ScreenSize[1] // 2)
+        #temporary
+        self.surf1 = pygame.image.load('src/assets/dummy.png').convert()
+        self.surf2 = pygame.image.load('src/assets/dummy.png').convert()
+
+        self.surfRect1 = self.surf1.get_rect()
+        self.surfRect2 = self.surf2.get_rect()
+
+        #self.Surf1Scaled = pygame.Surface
+        #self.Surf2Scaled = pygame.Surface
+        #self.newRect1 = pygame.Rect
+        #self.newRect2 = pygame.Rect
+
+        self.rect1 = pygame.Rect(0, 42, 480, 498)
+        self.rect2 = pygame.Rect(480, 42, 480, 498)
+
+        self.divider = pygame.Rect(480, 42, 6, 498)
+        self.hovered = False
+        self.pressed = False
+        self.firstTime = True
+
+        self.resizeDivider()
+        
+        self.corrector = None
+
+    def draw(self, screen):
+        if self.divider.collidepoint(Mouse.position):
+            self.hovered = True
+            Mouse.resize = True
+        else:
+            self.hovered = False
+
+        if self.pressed:
+            self.resizeDivider()
+
+        screen.blit(self.Surf1Scaled, self.newRect1.topleft)
+        screen.blit(self.Surf2Scaled, self.newRect2.topleft)
+
+        position1 = (self.divider.centerx, 42)
+        position2 = (self.divider.centerx, 540)
+        pygame.draw.line(screen, (255, 0, 0), position1, position2, 3)
+
+    def resizeDivider(self):
+        Mouse.resize = True
+        if self.firstTime:
+            self.divider.centerx = 480
+            self.firstTime = False
+        else:
+            self.divider.centerx = Mouse.position[0]
+            self.rect1.width = Mouse.position[0]
+            self.rect2.x = Mouse.position[0]
+            self.rect2.width = self.ScreenSize[0] - Mouse.position[0]
+
+        self.newRect1 = self.surfRect1.fit(self.rect1)
+        self.newRect2 = self.surfRect2.fit(self.rect2)
+
+        self.Surf1Scaled = pygame.transform.scale(self.surf1, self.newRect1.size)
+        self.Surf2Scaled = pygame.transform.scale(self.surf2, self.newRect2.size)
+
+    def handle_event(self, event):
+        if event.type == MOUSEBUTTONDOWN:
+            if event.button == 1:
+                if self.hovered:
+                    self.pressed = True
+
+        if event.type == MOUSEBUTTONUP:
+            if event.button == 1:
+                self.pressed = False
+
+
 class Interface:
     BgColor = pygame.Color(39, 39, 56)
     SideBarColor = pygame.Color(60, 60, 60)
     BoundColor = pygame.Color(30, 30, 30) 
     def __init__(self):
-        self.surface = pygame.Surface((960, 540))
-
+        self.size = (960, 540)
+        self.surface = pygame.Surface(self.size)
         self.Toolbar = Toolbar(self.surface)
+
+        self.Editor = Editor(self.size)
 
     def draw(self, screen):
         self.surface.fill(self.BgColor)
 
         self.Toolbar.draw(self.surface)
+        self.Editor.draw(self.surface)
         
         screen.blit(self.surface, (0, 0))
 
     def handle_event(self, event):
         if event.type == VIDEORESIZE:
-            size = event.size
-            self.surface = pygame.Surface(size)
-            self.Toolbar.resize(size)
+            self.size = event.size
+            self.surface = pygame.Surface(self.size)
+            self.Toolbar.resize(self.size)
 
+        self.Editor.handle_event(event)
         self.Toolbar.handle_event(event)
 
 '''

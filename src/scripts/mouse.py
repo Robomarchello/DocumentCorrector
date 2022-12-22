@@ -2,18 +2,21 @@ import pygame
 from pygame.locals import *
 
 
-#There is no point
 class Mouse:
     position = pygame.Vector2(0, 0)
     hovered = False
+    resize = False
 
     @classmethod
     def update(cls):
         if cls.hovered:
             pygame.mouse.set_cursor(SYSTEM_CURSOR_HAND)
+        elif cls.resize:
+            pygame.mouse.set_cursor(SYSTEM_CURSOR_SIZEWE)        
         else:
             pygame.mouse.set_cursor(SYSTEM_CURSOR_ARROW)
-        
+
+        cls.resize = False
         cls.hovered = False
 
     @classmethod
