@@ -2,6 +2,7 @@
 import pygame
 from pygame.locals import *
 from .mouse import Mouse
+from math import sqrt
 
 pygame.init()
 
@@ -111,10 +112,96 @@ class Toolbar:
         self.CopyBtn.handle_event(event)
 
 
+class Point:
+    def __init__(self, position, size, boundRect):
+        self.position = pygame.Vector2(position)
+        self.imgPos = self.position - boundRect.topleft
+
+        self.size = size
+
+        self.boundRect = boundRect
+
+        self.radius = 12
+        
+        self.orange = pygame.Color(255, 145, 100)
+        self.grey = pygame.Color(50, 50, 65)
+
+        self.pressed = False
+
+    def draw(self, screen):
+        if self.pressed:
+            self.position = Mouse.position.copy()
+            self.imgPos = self.position - self.boundRect.topleft
+
+            self.BoundCheck()
+
+        pygame.draw.circle(screen, self.grey, self.position, self.radius)
+        pygame.draw.circle(screen, self.orange, self.position, self.radius, 3)
+
+    def BoundCheck(self):
+        if self.position[0] < self.boundRect.left:
+            self.position[0] = self.boundRect.left
+        
+        elif self.position[0] > self.boundRect.right:
+            self.position[0] = self.boundRect.right
+
+        if self.position[1] < self.boundRect.top:
+            self.position[1] = self.boundRect.top
+        
+        elif self.position[1] > self.boundRect.bottom:
+            self.position[1] = self.boundRect.bottom
+
+    def updateBound(self, boundRect):
+        diffX = ((boundRect.width + 0.01) / (self.boundRect.width + 0.01))
+        diffY = ((boundRect.height + 0.01) / (self.boundRect.height + 0.01))
+
+        self.imgPos = self.scale(self.boundRect)
+
+        self.boundRect = boundRect
+
+        self.imgPos[0] *= diffX
+        self.imgPos[1] *= diffY
+
+        self.position = self.imgPos + self.boundRect.topleft
+
+        self.BoundCheck()
+
+    def scale(self, rect):
+        diffX = ((rect.width + 0.01) / (self.boundRect.width + 0.01))
+        diffY = ((rect.height + 0.01) / (self.boundRect.height + 0.01))
+
+        imagePos = pygame.Vector2(self.imgPos[0] * diffX, self.imgPos[1] * diffY)
+
+        return imagePos
+        
+    def collide(self):
+        mousePos = Mouse.position
+        diff = sqrt(
+            (self.position[0] - mousePos[0]) ** 2 +
+            (self.position[1] - mousePos[1]) ** 2)
+        
+        if diff - self.radius < 0:
+            return True
+        
+        return False
+
+    def handle_event(self, event):
+        if event.type == MOUSEBUTTONDOWN:
+            if event.button == 1:
+                if self.collide():
+                    self.pressed = True
+
+        if event.type == MOUSEBUTTONUP:
+            self.pressed = False
+
+
 class Editor:
     def __init__(self, ScreenSize):
         self.ScreenSize = ScreenSize
         self.HalfSize = (ScreenSize[0] // 2, ScreenSize[1] // 2)
+
+        self.borderColor = pygame.Color(28, 28, 41)
+
         #temporary
         self.surf1 = pygame.image.load('src/assets/dummy.png').convert()
         self.surf2 = pygame.image.load('src/assets/dummy.png').convert()
@@ -122,20 +209,29 @@ class Editor:
         self.surfRect1 = self.surf1.get_rect()
         self.surfRect2 = self.surf2.get_rect()
 
-        #self.Surf1Scaled = pygame.Surface
-        #self.Surf2Scaled = pygame.Surface
-        #self.newRect1 = pygame.Rect
-        #self.newRect2 = pygame.Rect
+        self.rect1 = pygame.Rect(0, 46, self.HalfSize[0], 498)
+        self.rect2 = pygame.Rect(self.HalfSize[0], 46, self.HalfSize[0], 498)
 
-        self.rect1 = pygame.Rect(0, 42, 480, 498)
-        self.rect2 = pygame.Rect(480, 42, 480, 498)
-
-        self.divider = pygame.Rect(480, 42, 6, 498)
+        self.divider = pygame.Rect(self.HalfSize[0], 46, 6, 498)
         self.hovered = False
         self.pressed = False
         self.firstTime = True
 
-        self.resizeDivider()
+        self.resizeDivider(Mouse.position[0])
+        
+        offset = [self.newRect1.width * 0.1, self.newRect1.height * 0.1]
+        pointRect = self.newRect1.move(offset)
+        
+        pointRect.size = (pointRect.width - offset[0] * 2,
+                          pointRect.height - offset[1] * 2) 
+        self.points = [
+            Point(pointRect.topleft, self.ScreenSize, self.newRect1),
+            Point(pointRect.topright, self.ScreenSize, self.newRect1),
+            Point(pointRect.bottomright, self.ScreenSize, self.newRect1),
+            Point(pointRect.bottomleft, self.ScreenSize, self.newRect1)]
+
+        self.polySurf = pygame.Surface(self.newRect1.size, SRCALPHA)
+        self.polySurf.set_alpha(127)
         
         self.corrector = None
 
@@ -147,31 +243,59 @@ class Editor:
             self.hovered = False
 
         if self.pressed:
-            self.resizeDivider()
+            self.resizeDivider(Mouse.position[0])
 
         screen.blit(self.Surf1Scaled, self.newRect1.topleft)
         screen.blit(self.Surf2Scaled, self.newRect2.topleft)
 
-        position1 = (self.divider.centerx, 42)
-        position2 = (self.divider.centerx, 540)
-        pygame.draw.line(screen, (255, 0, 0), position1, position2, 3)
+        positions = []
+        for point in self.points:
+            point.draw(screen)
+            point.updateBound(self.newRect1)
 
-    def resizeDivider(self):
+            positions.append(point.imgPos)
+
+        self.polySurf.fill((0, 0, 0, 0))
+        pygame.draw.polygon(self.polySurf, (200, 200, 200), positions)
+        screen.blit(self.polySurf, self.newRect1.topleft)
+
+        position1 = (self.divider.centerx, 46)
+        position2 = (self.divider.centerx, self.ScreenSize[1])
+        pygame.draw.line(screen, self.borderColor, position1, position2, 5)
+
+
+    def resizeDivider(self, xPos):
         Mouse.resize = True
         if self.firstTime:
-            self.divider.centerx = 480
+            self.divider.centerx = self.HalfSize[0]
             self.firstTime = False
         else:
-            self.divider.centerx = Mouse.position[0]
-            self.rect1.width = Mouse.position[0]
-            self.rect2.x = Mouse.position[0]
-            self.rect2.width = self.ScreenSize[0] - Mouse.position[0]
+            self.divider.centerx = xPos
+            self.rect1.width = xPos
+            self.rect2.x = xPos
+            self.rect2.width = self.ScreenSize[0] - xPos
 
         self.newRect1 = self.surfRect1.fit(self.rect1)
         self.newRect2 = self.surfRect2.fit(self.rect2)
 
+        self.polySurf = pygame.Surface(self.newRect1.size, SRCALPHA)
+        self.polySurf.set_alpha(127)
+
         self.Surf1Scaled = pygame.transform.scale(self.surf1, self.newRect1.size)
         self.Surf2Scaled = pygame.transform.scale(self.surf2, self.newRect2.size)
+
+    def resize(self, size):
+        self.ScreenSize = size
+        self.HalfSize = (size[0] // 2, size[1] // 2)
+
+        self.divider.centerx = self.HalfSize[0]
+        self.rect1.size = (self.HalfSize[0], self.ScreenSize[1] - 46)
+        self.rect2.x = self.HalfSize[0]
+        self.rect2.size = (self.HalfSize[0], self.ScreenSize[1] - 46)
+
+        self.resizeDivider(self.HalfSize[0])
+
+        self.divider.centerx = self.HalfSize[0]
 
     def handle_event(self, event):
         if event.type == MOUSEBUTTONDOWN:
@@ -183,11 +307,14 @@ class Editor:
             if event.button == 1:
                 self.pressed = False
 
+        for point in self.points:
+            point.handle_event(event)
+
 
 class Interface:
     BgColor = pygame.Color(39, 39, 56)
     SideBarColor = pygame.Color(60, 60, 60)
-    BoundColor = pygame.Color(30, 30, 30) 
+    BorderColor = pygame.Color(30, 30, 30) 
     def __init__(self):
         self.size = (960, 540)
         self.surface = pygame.Surface(self.size)
@@ -208,6 +335,10 @@ class Interface:
             self.size = event.size
             self.surface = pygame.Surface(self.size)
             self.Toolbar.resize(self.size)
+            self.Editor.resize(self.size)
+
+        if event.type == DROPFILE:
+            print(event)
 
         self.Editor.handle_event(event)
         self.Toolbar.handle_event(event)
