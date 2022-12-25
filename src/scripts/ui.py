@@ -129,14 +129,15 @@ class Point:
         self.pressed = False
 
     def draw(self, screen):
+        pygame.draw.circle(screen, self.grey, self.position, self.radius)
+        pygame.draw.circle(screen, self.orange, self.position, self.radius, 3)
+
+    def update(self):
         if self.pressed:
             self.position = Mouse.position.copy()
             self.imgPos = self.position - self.boundRect.topleft
 
             self.BoundCheck()
-
-        pygame.draw.circle(screen, self.grey, self.position, self.radius)
-        pygame.draw.circle(screen, self.orange, self.position, self.radius, 3)
 
     def BoundCheck(self):
         if self.position[0] < self.boundRect.left:
@@ -150,6 +151,8 @@ class Point:
         
         elif self.position[1] > self.boundRect.bottom:
             self.position[1] = self.boundRect.bottom
+
+        self.imgPos = self.position - self.boundRect.topleft
 
     def updateBound(self, boundRect):
         diffX = ((boundRect.width + 0.01) / (self.boundRect.width + 0.01))
@@ -202,7 +205,6 @@ class Editor:
 
         self.borderColor = pygame.Color(28, 28, 41)
 
-        #temporary
         self.surf1 = pygame.image.load('src/assets/dummy.png').convert()
         self.surf2 = pygame.image.load('src/assets/dummy.png').convert()
 
@@ -250,7 +252,7 @@ class Editor:
 
         positions = []
         for point in self.points:
-            point.draw(screen)
+            point.update()
             point.updateBound(self.newRect1)
 
             positions.append(point.imgPos)
@@ -258,6 +260,10 @@ class Editor:
         self.polySurf.fill((0, 0, 0, 0))
         pygame.draw.polygon(self.polySurf, (200, 200, 200), positions)
         screen.blit(self.polySurf, self.newRect1.topleft)
+
+        #i made another loop for drawing so points are above the polygon
+        for point in self.points:
+            point.draw(screen)
 
         position1 = (self.divider.centerx, 46)
         position2 = (self.divider.centerx, self.ScreenSize[1])
