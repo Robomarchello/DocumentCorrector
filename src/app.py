@@ -23,7 +23,7 @@ class App():
         points = [[205, 100], [565, 100], [765, 690], [5, 690]]
         #[[204, 100], [567, 100], [763, 690], [4, 690]]
         ##[[10, 211], [1024, 32], [1200, 990], [248, 1233]]
-        self.corrector = Corrector(points, self.surface)
+        #self.corrector = Corrector(points, self.surface)
 
         self.Debug = False
 

@@ -2,6 +2,7 @@
 import pygame
 from pygame.locals import *
 from .mouse import Mouse
+from .corrector import Corrector
 from math import sqrt
 
 pygame.init()
@@ -208,6 +209,11 @@ class Editor:
         self.surf1 = pygame.image.load('src/assets/dummy.png').convert()
         self.surf2 = pygame.image.load('src/assets/dummy.png').convert()
 
+        #Scaling image to size to work at higher fps
+        resolution = pygame.Rect(0, 0, 768, 768)
+        self.TransRect = self.surf1.get_rect().fit(resolution)
+        self.scaledSurf = pygame.transform.scale(self.surf1, self.TransRect.size)
+
         self.surfRect1 = self.surf1.get_rect()
         self.surfRect2 = self.surf2.get_rect()
 
@@ -223,19 +229,23 @@ class Editor:
         
         offset = [self.newRect1.width * 0.1, self.newRect1.height * 0.1]
         pointRect = self.newRect1.move(offset)
-        
         pointRect.size = (pointRect.width - offset[0] * 2,
                           pointRect.height - offset[1] * 2) 
+
         self.points = [
             Point(pointRect.topleft, self.ScreenSize, self.newRect1),
             Point(pointRect.topright, self.ScreenSize, self.newRect1),
             Point(pointRect.bottomright, self.ScreenSize, self.newRect1),
-            Point(pointRect.bottomleft, self.ScreenSize, self.newRect1)]
+            Point(pointRect.bottomleft, self.ScreenSize, self.newRect1)
+            ]
 
         self.polySurf = pygame.Surface(self.newRect1.size, SRCALPHA)
         self.polySurf.set_alpha(127)
-        
-        self.corrector = None
+        positions = []
+        for point in self.points:
+            positions.append(point.imgPos)
+
+        self.corrector = Corrector(positions, self.Surf1Scaled)
 
     def draw(self, screen):
         if self.divider.collidepoint(Mouse.position):
@@ -251,11 +261,18 @@ class Editor:
         screen.blit(self.Surf2Scaled, self.newRect2.topleft)
 
         positions = []
+        update = False
         for point in self.points:
             point.update()
             point.updateBound(self.newRect1)
 
+            #if point.pressed:
+            #update = True
+
             positions.append(point.imgPos)
+
+        #if update:
+        #self.corrector update
 
         self.polySurf.fill((0, 0, 0, 0))
         pygame.draw.polygon(self.polySurf, (200, 200, 200), positions)
