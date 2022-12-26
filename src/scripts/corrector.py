@@ -112,3 +112,54 @@ class Corrector:
     def draw(self, screen):
         pygame.surfarray.blit_array(self.surf, self.corrected)
         screen.blit(self.surf, (0, 0))#(204, 100))
+
+
+def get_corrected(points, surface):
+        points = [Vector2(point) for point in points]
+        CorRect = pygame.Rect(0, 0, 0, 0)
+
+        pixels = numpy.array(pygame.PixelArray(surface))
+
+        topWidth = points[1][0] - points[0][0]
+        bottomWidth = points[2][0] - points[3][0]
+        topHeight = points[3][1] - points[0][1]
+        bottomHeight = points[2][1] - points[1][1]
+
+        CorSize = (
+            int((topWidth + bottomWidth) // 2), 
+            int((topHeight + bottomHeight) // 2)
+        )
+        CorSizeYX = (CorSize[1], CorSize[0])
+        
+        start = perf_counter()
+        x = numpy.linspace(1.0, 0.0, CorSize[0])
+        y = numpy.linspace(0.0, 1.0, CorSize[1])
+
+        diff1 = numpy.subtract(points[3], points[0])
+        leftX = numpy.multiply(diff1[0], y) + points[0][0]
+        leftY = numpy.multiply(diff1[1], y) + points[0][1]
+
+        diff2 = numpy.subtract(points[2], points[1])
+        rightX = numpy.multiply(diff2[0], y) + points[1][0]
+        
+        leftForX = numpy.repeat(leftX, x.shape[0])
+
+        diffX = numpy.subtract(rightX, leftX)
+        AllDiff = numpy.repeat(diffX, x.shape[0])
+        AllX = numpy.tile(x, y.shape[0])
+
+        xPoses = numpy.multiply(AllX, AllDiff) + leftForX
+        yPoses = numpy.repeat(leftY, x.shape[0])
+        
+        xPoses = numpy.int_(xPoses)
+        yPoses = numpy.int_(yPoses)
+
+        corrected = pixels[xPoses, yPoses].reshape(CorSizeYX)
+        corrected = numpy.rot90(corrected)
+
+        surf = pygame.Surface(CorSize)
+        pygame.surfarray.blit_array(surf, corrected)
+
+        print(perf_counter() - start)
+
+        return surf

@@ -2,7 +2,7 @@
 import pygame
 from pygame.locals import *
 from .mouse import Mouse
-from .corrector import Corrector
+from .corrector import Corrector, get_corrected
 from math import sqrt
 
 pygame.init()
@@ -168,7 +168,7 @@ class Point:
 
         self.position = self.imgPos + self.boundRect.topleft
 
-        self.BoundCheck()
+        #self.BoundCheck()
 
     def scale(self, rect):
         diffX = ((rect.width + 0.01) / (self.boundRect.width + 0.01))
@@ -206,7 +206,7 @@ class Editor:
 
         self.borderColor = pygame.Color(28, 28, 41)
 
-        self.surf1 = pygame.image.load('src/assets/dummy.png').convert()
+        self.surf1 = pygame.image.load('src/assets/distorted.png').convert()
         self.surf2 = pygame.image.load('src/assets/dummy.png').convert()
 
         #Scaling image to size to work at higher fps
@@ -217,10 +217,10 @@ class Editor:
         self.surfRect1 = self.surf1.get_rect()
         self.surfRect2 = self.surf2.get_rect()
 
-        self.rect1 = pygame.Rect(0, 46, self.HalfSize[0], 498)
-        self.rect2 = pygame.Rect(self.HalfSize[0], 46, self.HalfSize[0], 498)
+        self.rect1 = pygame.Rect(0, 45, self.HalfSize[0], 499)
+        self.rect2 = pygame.Rect(self.HalfSize[0], 45, self.HalfSize[0], 499)
 
-        self.divider = pygame.Rect(self.HalfSize[0], 46, 6, 498)
+        self.divider = pygame.Rect(self.HalfSize[0], 45, 6, 499)
         self.hovered = False
         self.pressed = False
         self.firstTime = True
@@ -243,10 +243,20 @@ class Editor:
         self.polySurf.set_alpha(127)
         positions = []
         for point in self.points:
-            positions.append(point.imgPos)
+            positions.append(point.scale(self.surfRect1))#self.TransRect
 
-        self.corrector = Corrector(positions, self.Surf1Scaled)
+        #self.corrector = Corrector(positions, self.surf1)#self.surf1scaled #Change to those so it works
+        self.updateOutput()
 
+    def updateOutput(self):
+        positions = []
+        for point in self.points:
+            positions.append(point.scale(self.surfRect1))
+
+        self.surf2 = get_corrected(positions, self.surf1)
+        print(self.surf2.get_size())
+        self.updateScaledSurf()
+        
     def draw(self, screen):
         if self.divider.collidepoint(Mouse.position):
             self.hovered = True
@@ -266,13 +276,13 @@ class Editor:
             point.update()
             point.updateBound(self.newRect1)
 
-            #if point.pressed:
-            #update = True
+            if point.pressed:
+                update = True
 
             positions.append(point.imgPos)
 
-        #if update:
-        #self.corrector update
+        if update:
+            self.updateOutput()
 
         self.polySurf.fill((0, 0, 0, 0))
         pygame.draw.polygon(self.polySurf, (200, 200, 200), positions)
@@ -282,7 +292,7 @@ class Editor:
         for point in self.points:
             point.draw(screen)
 
-        position1 = (self.divider.centerx, 46)
+        position1 = (self.divider.centerx, 45)
         position2 = (self.divider.centerx, self.ScreenSize[1])
         pygame.draw.line(screen, self.borderColor, position1, position2, 5)
 
@@ -304,6 +314,15 @@ class Editor:
         self.polySurf = pygame.Surface(self.newRect1.size, SRCALPHA)
         self.polySurf.set_alpha(127)
 
+        self.updateScaledSurf()
+
+    def updateScaledSurf(self):
+        self.surfRect1 = self.surf1.get_rect()
+        self.surfRect2 = self.surf2.get_rect()
+    
+        self.newRect1 = self.surfRect1.fit(self.rect1)
+        self.newRect2 = self.surfRect2.fit(self.rect2)
+
         self.Surf1Scaled = pygame.transform.scale(self.surf1, self.newRect1.size)
         self.Surf2Scaled = pygame.transform.scale(self.surf2, self.newRect2.size)
 
@@ -312,9 +331,9 @@ class Editor:
         self.HalfSize = (size[0] // 2, size[1] // 2)
 
         self.divider.centerx = self.HalfSize[0]
-        self.rect1.size = (self.HalfSize[0], self.ScreenSize[1] - 46)
+        self.rect1.size = (self.HalfSize[0], self.ScreenSize[1] - 45)
         self.rect2.x = self.HalfSize[0]
-        self.rect2.size = (self.HalfSize[0], self.ScreenSize[1] - 46)
+        self.rect2.size = (self.HalfSize[0], self.ScreenSize[1] - 45)
 
         self.resizeDivider(self.HalfSize[0])
 
