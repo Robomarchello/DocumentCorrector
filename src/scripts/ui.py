@@ -254,7 +254,7 @@ class Editor:
             positions.append(point.scale(self.surfRect1))
 
         self.surf2 = get_corrected(positions, self.surf1)
-        print(self.surf2.get_size())
+        #print(self.surf2.get_size())
         self.updateScaledSurf()
         
     def draw(self, screen):
