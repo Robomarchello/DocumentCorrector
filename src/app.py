@@ -1,6 +1,5 @@
 import pygame
 from pygame.locals import *
-from .scripts.corrector import Corrector
 from .scripts.ui import Interface
 from .scripts.mouse import Mouse
 

@@ -1,14 +1,10 @@
-#you might try using pygame_gui module for it
 import pygame
 from pygame.locals import *
 from .mouse import Mouse
-from .corrector import Corrector, get_corrected
+from .corrector import get_corrected
 from math import sqrt
 
 pygame.init()
-
-#(101, 130), (636, 20), (665, 640), (132, 745) #new Points
-
 
 
 class Button:
@@ -170,8 +166,6 @@ class Point:
         self.imgPos[1] *= diffY
 
         self.position = self.imgPos + self.boundRect.topleft
-
-        #self.BoundCheck()
 
     def scale(self, rect):
         diffX = ((rect.width + 0.01) / (self.boundRect.width + 0.01))
