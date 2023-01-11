@@ -242,16 +242,15 @@ class Editor:
         for point in self.points:
             positions.append(point.scale(self.surfRect1))#self.TransRect
 
-        #self.corrector = Corrector(positions, self.surf1)#self.surf1scaled #Change to those so it works
         self.updateOutput()
 
     def updateOutput(self):
         positions = []
         for point in self.points:
-            positions.append(point.scale(self.surfRect1))
+            positions.append(point.scale(self.TransRect))#self.TransRect
 
-        self.surf2 = get_corrected(positions, self.surf1)
-        #print(self.surf2.get_size())
+        self.surf2 = get_corrected(positions, self.scaledSurf)#self.scaledSurf
+
         self.updateScaledSurf()
         
     def draw(self, screen):
@@ -293,6 +292,8 @@ class Editor:
         position2 = (self.divider.centerx, self.ScreenSize[1])
         pygame.draw.line(screen, self.borderColor, position1, position2, 5)
 
+        
+
 
     def resizeDivider(self, xPos):
         Mouse.resize = True
@@ -301,6 +302,8 @@ class Editor:
             self.firstTime = False
         else:
             self.divider.centerx = xPos
+            self.divider.height = self.ScreenSize[1]
+
             self.rect1.width = xPos
             self.rect2.x = xPos
             self.rect2.width = self.ScreenSize[0] - xPos
