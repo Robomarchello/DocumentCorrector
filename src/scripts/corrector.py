@@ -10,6 +10,61 @@ import numpy
 from time import perf_counter
 
 
+def get_corrected(points, surface):
+        #points = [(100, 250), (400, 100), (400, 400), (100, 400)]
+        points = [Vector2(point) for point in points]
+
+        pixels = numpy.array(pygame.PixelArray(surface))
+
+        topWidth = points[1][0] - points[0][0]
+        bottomWidth = points[2][0] - points[3][0]
+        topHeight = points[3][1] - points[0][1]
+        bottomHeight = points[2][1] - points[1][1]
+
+        CorSize = (
+            int((topWidth + bottomWidth) // 2), 
+            int((topHeight + bottomHeight) // 2)
+        )
+        CorSizeYX = (CorSize[1], CorSize[0])
+
+        start = perf_counter()
+        x = numpy.linspace(1.0, 0.0, CorSize[0])
+        y = numpy.linspace(0.0, 1.0, CorSize[1])
+
+        yPair = numpy.repeat(y, 2).reshape(y.shape[0], 2)
+
+        left = numpy.subtract(points[3], points[0])
+        right = numpy.subtract(points[2], points[1])
+
+        leftInterp = numpy.multiply(left, yPair) + points[0]
+        rightInterp = numpy.multiply(right, yPair) + points[1]
+
+        between = numpy.subtract(rightInterp, leftInterp)
+        betweenLoc = numpy.repeat(leftInterp, x.shape[0], axis=0)
+
+        allX = numpy.tile(x, between.shape[0])
+        allX = numpy.repeat(allX, 2).reshape(allX.shape[0], 2)
+        allBetween = numpy.repeat(between, x.shape[0], axis=0)
+        betweenPoses = numpy.multiply(allBetween, allX)
+        betweenPoses = betweenPoses + betweenLoc
+
+        xPoses = numpy.take(betweenPoses, 0, axis=1)
+        yPoses = numpy.take(betweenPoses, 1, axis=1)
+        
+        xPoses = numpy.int_(xPoses)
+        yPoses = numpy.int_(yPoses)
+        
+        corrected = pixels[xPoses, yPoses].reshape(CorSizeYX)
+        corrected = numpy.rot90(corrected)
+
+        surf = pygame.Surface(CorSize)
+        pygame.surfarray.blit_array(surf, corrected)
+
+        print(perf_counter() - start)
+
+        return surf
+
+
 class Corrector:
     def __init__(self, points, surface):
         #topleft, topright, bottomright, bottomleft
@@ -113,9 +168,10 @@ class Corrector:
         pygame.surfarray.blit_array(self.surf, self.corrected)
         screen.blit(self.surf, (0, 0))#(204, 100))
 
-
+'''
 def get_corrected(points, surface):
         points = [Vector2(point) for point in points]
+        CorRect = pygame.Rect(0, 0, 0, 0)
 
         pixels = numpy.array(pygame.PixelArray(surface))
 
@@ -129,7 +185,8 @@ def get_corrected(points, surface):
             int((topHeight + bottomHeight) // 2)
         )
         CorSizeYX = (CorSize[1], CorSize[0])
-        
+
+        start = perf_counter()
         x = numpy.linspace(1.0, 0.0, CorSize[0])
         y = numpy.linspace(0.0, 1.0, CorSize[1])
 
@@ -139,24 +196,16 @@ def get_corrected(points, surface):
 
         diff2 = numpy.subtract(points[2], points[1])
         rightX = numpy.multiply(diff2[0], y) + points[1][0]
-        rightY = numpy.multiply(diff1[1], y) + points[1][1]
-        
+
         leftForX = numpy.repeat(leftX, x.shape[0])
 
         diffX = numpy.subtract(rightX, leftX)
         AllDiff = numpy.repeat(diffX, x.shape[0])
         AllX = numpy.tile(x, y.shape[0])
 
-        leftForY = numpy.repeat(leftY, x.shape[0])
-
-        diffY = numpy.subtract(rightY, leftY)
-        AllDiffY = numpy.repeat(diffY, x.shape[0])
-        AllY = numpy.repeat(y, x.shape[0])#this one is right
-        print(AllDiff.shape, AllY.shape)
-
         xPoses = numpy.multiply(AllX, AllDiff) + leftForX
-        yPoses = numpy.multiply(AllY, AllDiffY) + leftForY#numpy.repeat(leftY, x.shape[0])
-        
+        yPoses = numpy.repeat(leftY, x.shape[0])
+
         xPoses = numpy.int_(xPoses)
         yPoses = numpy.int_(yPoses)
 
@@ -166,6 +215,14 @@ def get_corrected(points, surface):
         surf = pygame.Surface(CorSize)
         pygame.surfarray.blit_array(surf, corrected)
 
-        #print(perf_counter() - start)
+        print(perf_counter() - start)
 
         return surf
+'''
+'''
+        between = numpy.repeat(between, x.shape[0])
+        everyX = numpy.tile(x, y.shape[0]).repeat(2)
+        betweenInterp = numpy.multiply(between, everyX)
+        betweenInterp = betweenInterp.reshape(betweenInterp.shape[0] // 2, 2)
+        xPoses = numpy.int_(betweenInterp[:][0])
+        yPoses = numpy.int_(betweenInterp[:][1])'''

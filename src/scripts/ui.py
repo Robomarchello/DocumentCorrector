@@ -7,6 +7,9 @@ from math import sqrt
 
 pygame.init()
 
+#(101, 130), (636, 20), (665, 640), (132, 745) #new Points
+
+
 
 class Button:
     def __init__(self, rect, font, text, textColor, 
@@ -117,7 +120,7 @@ class Point:
     def __init__(self, position, size, boundRect):
         self.position = pygame.Vector2(position)
         self.imgPos = self.position - boundRect.topleft
-
+        
         self.size = size
 
         self.boundRect = boundRect
