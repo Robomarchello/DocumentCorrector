@@ -115,7 +115,7 @@ class Toolbar:
 class Point:
     def __init__(self, position, size, boundRect):
         self.position = pygame.Vector2(position)
-        self.imgPos = self.position - boundRect.topleft
+        self.OriginPos = self.position - boundRect.topleft
         
         self.size = size
 
@@ -135,11 +135,12 @@ class Point:
     def update(self):
         if self.pressed:
             self.position = Mouse.position.copy()
-            self.imgPos = self.position - self.boundRect.topleft
+            self.OriginPos = self.position - self.boundRect.topleft
 
             self.BoundCheck()
 
     def BoundCheck(self):
+        #I think 
         if self.position[0] < self.boundRect.left:
             self.position[0] = self.boundRect.left
         
@@ -152,28 +153,50 @@ class Point:
         elif self.position[1] > self.boundRect.bottom:
             self.position[1] = self.boundRect.bottom
 
-        self.imgPos = self.position - self.boundRect.topleft
+        self.OriginPos = self.position - self.boundRect.topleft
 
     def updateBound(self, boundRect):
         diffX = ((boundRect.width + 0.01) / (self.boundRect.width + 0.01))
         diffY = ((boundRect.height + 0.01) / (self.boundRect.height + 0.01))
 
-        self.imgPos = self.scale(self.boundRect)
+        self.OriginPos = self.scale(self.boundRect)
 
         self.boundRect = boundRect
 
-        self.imgPos[0] *= diffX
-        self.imgPos[1] *= diffY
+        self.OriginPos[0] *= diffX
+        self.OriginPos[1] *= diffY
 
-        self.position = self.imgPos + self.boundRect.topleft
+        self.position = self.OriginPos + self.boundRect.topleft
+
+    def scaleCheck(self, OriginPos, rect):
+        '''
+        function made specifically for self.scale
+        so i can get away without errors😳
+        did - 1 so the indecies are right
+        '''
+        if OriginPos[0] < 0:
+            OriginPos[0] = 0
+
+        if OriginPos[1] < 0:
+            OriginPos[1] = 0
+
+        if OriginPos[0] >= rect.width:
+            OriginPos[0] = rect.width - 1
+
+        if OriginPos[1] >= rect.height:
+            OriginPos[1] = rect.height - 1
+
+        return OriginPos
 
     def scale(self, rect):
+        # doing + 0.01 so i don't get 0 division error💀
         diffX = ((rect.width + 0.01) / (self.boundRect.width + 0.01))
         diffY = ((rect.height + 0.01) / (self.boundRect.height + 0.01))
 
-        imagePos = pygame.Vector2(self.imgPos[0] * diffX, self.imgPos[1] * diffY)
+        OriginPos = pygame.Vector2(self.OriginPos[0] * diffX, self.OriginPos[1] * diffY)
+        OriginPos = self.scaleCheck(OriginPos, rect)
 
-        return imagePos
+        return OriginPos
         
     def collide(self):
         mousePos = Mouse.position
@@ -214,8 +237,8 @@ class Editor:
         self.surfRect1 = self.surf1.get_rect()
         self.surfRect2 = self.surf2.get_rect()
 
-        self.rect1 = pygame.Rect(0, 45, self.HalfSize[0], 499)
-        self.rect2 = pygame.Rect(self.HalfSize[0], 45, self.HalfSize[0], 499)
+        self.leftRect = pygame.Rect(0, 45, self.HalfSize[0], 499)
+        self.rightRect = pygame.Rect(self.HalfSize[0], 45, self.HalfSize[0], 499)
 
         self.divider = pygame.Rect(self.HalfSize[0], 45, 6, 499)
         self.hovered = False
@@ -224,24 +247,24 @@ class Editor:
 
         self.resizeDivider(Mouse.position[0])
         
-        offset = [self.newRect1.width * 0.1, self.newRect1.height * 0.1]
-        pointRect = self.newRect1.move(offset)
+        offset = [self.fitLeftRect.width * 0.1, self.fitLeftRect.height * 0.1]
+        pointRect = self.fitLeftRect.move(offset)
         pointRect.size = (pointRect.width - offset[0] * 2,
                           pointRect.height - offset[1] * 2) 
 
         self.points = [
-            Point(pointRect.topleft, self.ScreenSize, self.newRect1),
-            Point(pointRect.topright, self.ScreenSize, self.newRect1),
-            Point(pointRect.bottomright, self.ScreenSize, self.newRect1),
-            Point(pointRect.bottomleft, self.ScreenSize, self.newRect1)
+            Point(pointRect.topleft, self.ScreenSize, self.fitLeftRect),
+            Point(pointRect.topright, self.ScreenSize, self.fitLeftRect),
+            Point(pointRect.bottomright, self.ScreenSize, self.fitLeftRect),
+            Point(pointRect.bottomleft, self.ScreenSize, self.fitLeftRect)
             ]
 
-        self.polySurf = pygame.Surface(self.newRect1.size, SRCALPHA)
+        self.polySurf = pygame.Surface(self.fitLeftRect.size, SRCALPHA)
         self.polySurf.set_alpha(127)
         positions = []
         for point in self.points:
             positions.append(point.scale(self.surfRect1))#self.TransRect
-
+        
         self.updateOutput()
 
     def updateOutput(self):
@@ -263,26 +286,26 @@ class Editor:
         if self.pressed:
             self.resizeDivider(Mouse.position[0])
 
-        screen.blit(self.Surf1Scaled, self.newRect1.topleft)
-        screen.blit(self.Surf2Scaled, self.newRect2.topleft)
+        screen.blit(self.Surf1Scaled, self.fitLeftRect.topleft)
+        screen.blit(self.Surf2Scaled, self.fitRightRect.topleft)
 
         positions = []
         update = False
         for point in self.points:
             point.update()
-            point.updateBound(self.newRect1)
+            point.updateBound(self.fitLeftRect)
 
             if point.pressed:
                 update = True
 
-            positions.append(point.imgPos)
+            positions.append(point.OriginPos)
 
         if update:
             self.updateOutput()
 
         self.polySurf.fill((0, 0, 0, 0))
         pygame.draw.polygon(self.polySurf, (200, 200, 200), positions)
-        screen.blit(self.polySurf, self.newRect1.topleft)
+        screen.blit(self.polySurf, self.fitLeftRect.topleft)
 
         #i made another loop for drawing so points are above the polygon
         for point in self.points:
@@ -291,9 +314,6 @@ class Editor:
         position1 = (self.divider.centerx, 45)
         position2 = (self.divider.centerx, self.ScreenSize[1])
         pygame.draw.line(screen, self.borderColor, position1, position2, 5)
-
-        
-
 
     def resizeDivider(self, xPos):
         Mouse.resize = True
@@ -304,14 +324,14 @@ class Editor:
             self.divider.centerx = xPos
             self.divider.height = self.ScreenSize[1]
 
-            self.rect1.width = xPos
-            self.rect2.x = xPos
-            self.rect2.width = self.ScreenSize[0] - xPos
+            self.leftRect.width = xPos
+            self.rightRect.x = xPos
+            self.rightRect.width = self.ScreenSize[0] - xPos
 
-        self.newRect1 = self.surfRect1.fit(self.rect1)
-        self.newRect2 = self.surfRect2.fit(self.rect2)
+        self.fitLeftRect = self.surfRect1.fit(self.leftRect)
+        self.fitRightRect = self.surfRect2.fit(self.rightRect)
 
-        self.polySurf = pygame.Surface(self.newRect1.size, SRCALPHA)
+        self.polySurf = pygame.Surface(self.fitLeftRect.size, SRCALPHA)
         self.polySurf.set_alpha(127)
 
         self.updateScaledSurf()
@@ -320,20 +340,20 @@ class Editor:
         self.surfRect1 = self.surf1.get_rect()
         self.surfRect2 = self.surf2.get_rect()
     
-        self.newRect1 = self.surfRect1.fit(self.rect1)
-        self.newRect2 = self.surfRect2.fit(self.rect2)
+        self.fitLeftRect = self.surfRect1.fit(self.leftRect)
+        self.fitRightRect = self.surfRect2.fit(self.rightRect)
 
-        self.Surf1Scaled = pygame.transform.scale(self.surf1, self.newRect1.size)
-        self.Surf2Scaled = pygame.transform.scale(self.surf2, self.newRect2.size)
+        self.Surf1Scaled = pygame.transform.scale(self.surf1, self.fitLeftRect.size)
+        self.Surf2Scaled = pygame.transform.scale(self.surf2, self.fitRightRect.size)
 
     def resize(self, size):
         self.ScreenSize = size
         self.HalfSize = (size[0] // 2, size[1] // 2)
 
         self.divider.centerx = self.HalfSize[0]
-        self.rect1.size = (self.HalfSize[0], self.ScreenSize[1] - 45)
-        self.rect2.x = self.HalfSize[0]
-        self.rect2.size = (self.HalfSize[0], self.ScreenSize[1] - 45)
+        self.leftRect.size = (self.HalfSize[0], self.ScreenSize[1] - 45)
+        self.rightRect.x = self.HalfSize[0]
+        self.rightRect.size = (self.HalfSize[0], self.ScreenSize[1] - 45)
 
         self.resizeDivider(self.HalfSize[0])
 
