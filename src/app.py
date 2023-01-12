@@ -18,12 +18,6 @@ class App():
 
         self.interface = Interface()
 
-        #topleft, topright, bottomright, bottomleft
-        points = [[205, 100], [565, 100], [765, 690], [5, 690]]
-        #[[204, 100], [567, 100], [763, 690], [4, 690]]
-        ##[[10, 211], [1024, 32], [1200, 990], [248, 1233]]
-        #self.corrector = Corrector(points, self.surface)
-
         self.Debug = False
 
         self.clock = pygame.time.Clock()
@@ -37,13 +31,7 @@ class App():
             self.clock.tick(self.fps)
             screen.fill((255, 255, 255))
 
-            #UNCOMMENT WHEN DONE WITH UI
-            #self.corrector.draw(screen)
-            #if self.Debug:
-            #    self.screen.blit(self.copy, (0, 0))
-
-            self.interface.draw(screen)
-            
+            self.interface.draw(screen)            
 
             for event in pygame.event.get():
                 if event.type == QUIT:
@@ -58,6 +46,8 @@ class App():
 
                 for event_handler in self.event_handlers:
                     event_handler.handle_event(event)
+
+            #pygame.display.set_caption(str(round(self.clock.get_fps())))
 
             Mouse.update()
             pygame.display.update()

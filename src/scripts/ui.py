@@ -140,7 +140,9 @@ class Point:
             self.BoundCheck()
 
     def BoundCheck(self):
-        #I think 
+        '''
+        Checking if point position is less than bound
+        '''
         if self.position[0] < self.boundRect.left:
             self.position[0] = self.boundRect.left
         
@@ -188,13 +190,14 @@ class Point:
 
         return OriginPos
 
-    def scale(self, rect):
+    def scale(self, rect, scaleCheck=False):
         # doing + 0.01 so i don't get 0 division error💀
         diffX = ((rect.width + 0.01) / (self.boundRect.width + 0.01))
         diffY = ((rect.height + 0.01) / (self.boundRect.height + 0.01))
 
         OriginPos = pygame.Vector2(self.OriginPos[0] * diffX, self.OriginPos[1] * diffY)
-        OriginPos = self.scaleCheck(OriginPos, rect)
+        if scaleCheck:
+            OriginPos = self.scaleCheck(OriginPos, rect)
 
         return OriginPos
         
@@ -209,11 +212,16 @@ class Point:
         
         return False
 
-    def handle_event(self, event):
+    def handle_event(self, event, points):
         if event.type == MOUSEBUTTONDOWN:
             if event.button == 1:
                 if self.collide():
-                    self.pressed = True
+                    pressable = True
+                    for point in points:
+                        if point.pressed:
+                            pressable = False
+                    if pressable:
+                        self.pressed = True
 
         if event.type == MOUSEBUTTONUP:
             self.pressed = False
@@ -228,6 +236,9 @@ class Editor:
 
         self.surf1 = pygame.image.load('src/assets/distorted.png').convert()
         self.surf2 = pygame.image.load('src/assets/dummy.png').convert()
+
+        self.errorSurf = pygame.image.load('src/assets/error.png').convert()
+        self.errorRect = self.errorSurf.get_rect()
 
         #Scaling image to size to work at higher fps
         resolution = pygame.Rect(0, 0, 768, 768)
@@ -270,9 +281,12 @@ class Editor:
     def updateOutput(self):
         positions = []
         for point in self.points:
-            positions.append(point.scale(self.TransRect))#self.TransRect
+            positions.append(point.scale(self.TransRect, True))
 
-        self.surf2 = get_corrected(positions, self.scaledSurf)#self.scaledSurf
+        try:
+            self.surf2 = get_corrected(positions, self.scaledSurf)
+        except:
+            self.surf2 = self.errorSurf
 
         self.updateScaledSurf()
         
@@ -339,7 +353,12 @@ class Editor:
     def updateScaledSurf(self):
         self.surfRect1 = self.surf1.get_rect()
         self.surfRect2 = self.surf2.get_rect()
-    
+
+        if self.surfRect2.size == (0, 0):
+            #handling 0 size error
+            self.surf2 = self.errorSurf
+            self.surfRect2 = self.errorRect  
+
         self.fitLeftRect = self.surfRect1.fit(self.leftRect)
         self.fitRightRect = self.surfRect2.fit(self.rightRect)
 
@@ -368,9 +387,9 @@ class Editor:
         if event.type == MOUSEBUTTONUP:
             if event.button == 1:
                 self.pressed = False
-
+        
         for point in self.points:
-            point.handle_event(event)
+            point.handle_event(event, self.points)
 
 
 class Interface:
@@ -404,65 +423,3 @@ class Interface:
 
         self.Editor.handle_event(event)
         self.Toolbar.handle_event(event)
-
-'''
-class Button:
-    def __init__(self, x, y, width, height, font, text, textColor, color, mouse, func):
-        self.rect = pygame.Rect(x, y, width, height)
-        
-        self.textRender = font.render(text, True, textColor)
-        self.textRect = self.textRender.get_rect(center=self.rect.center)
-        
-        self.hovered = False
-        self.clicked = False
-        self.func = func
-
-        self.animTime = 0
-        self.animFrames = 5
-        self.animPosMove = pygame.Vector2(-6, 6)
-
-        self.color = pygame.Color(color)
-
-        self.shadowColor = self.color.lerp((0, 0, 0), 0.2)
-
-        self.mouse = mouse
-
-    def draw(self, screen):
-        #animation
-        if self.clicked:
-            if self.animTime < self.animFrames:
-                self.animTime += 1
-        else:
-            if self.animTime > 0:
-                self.animTime -= 1
-        
-        shadowRect = self.rect.move(-6, 6)
-        pygame.draw.rect(screen, self.shadowColor, shadowRect)
-
-        if self.animTime != 0:
-            animProg = self.animTime / self.animFrames
-            animRect = self.rect.move(self.animPosMove * animProg)
-            self.textRect.center = animRect.center
-            pygame.draw.rect(screen, self.color, animRect)
-
-        else:
-            pygame.draw.rect(screen, self.color, self.rect)
-        
-        screen.blit(self.textRender, self.textRect.topleft)
-
-        if self.rect.collidepoint(self.mouse.position):
-            self.hovered = True
-            self.mouse.hovered = True
-        else:
-            self.hovered = False
-
-    def handle_event(self, event):
-        if event.type == MOUSEBUTTONDOWN:
-            if event.button == 1:
-                if self.hovered:
-                    self.func()
-                    self.clicked = True
-        
-        if event.type == MOUSEBUTTONUP:
-            if event.button == 1:
-                self.clicked = False'''

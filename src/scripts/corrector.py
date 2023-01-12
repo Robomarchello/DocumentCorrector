@@ -14,7 +14,8 @@ def get_corrected(points, surface):
     points = [Vector2(point) for point in points]
 
     #pygame.surfarray.array2d(surface)?
-    pixels = numpy.array(pygame.PixelArray(surface))
+    #numpy.array(pygame.PixelArray(surface))
+    pixels = pygame.surfarray.array2d(surface)
 
     topWidth = points[1][0] - points[0][0]
     bottomWidth = points[2][0] - points[3][0]
