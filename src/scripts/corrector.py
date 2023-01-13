@@ -13,8 +13,6 @@ from time import perf_counter
 def get_corrected(points, surface):
     points = [Vector2(point) for point in points]
 
-    #pygame.surfarray.array2d(surface)?
-    #numpy.array(pygame.PixelArray(surface))
     pixels = pygame.surfarray.array2d(surface)
 
     topWidth = points[1][0] - points[0][0]

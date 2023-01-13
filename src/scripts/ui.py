@@ -1,19 +1,18 @@
 import pygame
+import pygame.scrap
 from pygame.locals import *
 from .mouse import Mouse
 from .corrector import get_corrected
 from math import sqrt
+import json
 
 pygame.init()
 
 
 class Button:
     def __init__(self, rect, font, text, textColor, 
-                color, hoverColor, func, image=None):
-        if image == None:
-            self.rect = rect
-        else:
-            pass
+                color, hoverColor, func):
+        self.rect = rect
         
         self.textRender = font.render(text, True, textColor)
         self.textRect = self.textRender.get_rect(center=self.rect.center)
@@ -53,7 +52,7 @@ class Button:
 
 
 class Toolbar:
-    def __init__(self, screen):
+    def __init__(self, screen, editor):
         self.screen = screen
         size = screen.get_size()
 
@@ -62,7 +61,6 @@ class Toolbar:
         self.hoverColor = pygame.Color(50, 50, 70)
         self.white = pygame.Color('white')
 
-        
         self.border = pygame.Rect(0, 0, size[0], 42)
 
         self.icon = pygame.image.load('src/assets/logoIcon.png').convert_alpha()
@@ -81,14 +79,23 @@ class Toolbar:
         self.CopyBtn = Button(self.CopyRect, self.buttonFont, 'Copy',
                             self.white, self.BgColor, self.hoverColor, self.copy)
 
+        self.editor = editor
+
     def load(self):
         print('load image, partner')
 
     def save(self):
-        print('save image, partner')
+        self.editor.SaveOutput('corrected.png')
+        
+        print('Output Saved!')
 
     def copy(self):
-        print('copy image, partner')
+        self.editor.SaveOutput('src/assets/ToClipboard.bmp')
+
+        with open('src/assets/ToClipboard.bmp', 'rb') as file:
+            pygame.scrap.put(SCRAP_BMP, file.read())
+
+        print('Copied!')
 
     def resize(self, size):
         self.border.width = size[0]
@@ -229,24 +236,27 @@ class Point:
 
 class Editor:
     def __init__(self, ScreenSize):
+        #initializing here because pygame.scrap requires window
+        pygame.scrap.init()
+
         self.ScreenSize = ScreenSize
         self.HalfSize = (ScreenSize[0] // 2, ScreenSize[1] // 2)
 
         self.borderColor = pygame.Color(28, 28, 41)
 
-        self.surf1 = pygame.image.load('src/assets/distorted.png').convert()
-        self.surf2 = pygame.image.load('src/assets/dummy.png').convert()
+        self.surf = pygame.image.load('src/assets/template.png').convert()
+        self.OutputSurf = self.surf.copy()
 
         self.errorSurf = pygame.image.load('src/assets/error.png').convert()
         self.errorRect = self.errorSurf.get_rect()
 
         #Scaling image to size to work at higher fps
         resolution = pygame.Rect(0, 0, 768, 768)
-        self.TransRect = self.surf1.get_rect().fit(resolution)
-        self.scaledSurf = pygame.transform.scale(self.surf1, self.TransRect.size)
+        self.TransRect = self.surf.get_rect().fit(resolution)
+        self.scaledSurf = pygame.transform.scale(self.surf, self.TransRect.size)
 
-        self.surfRect1 = self.surf1.get_rect()
-        self.surfRect2 = self.surf2.get_rect()
+        self.surfRect1 = self.surf.get_rect()
+        self.surfRect2 = self.OutputSurf.get_rect()
 
         self.leftRect = pygame.Rect(0, 45, self.HalfSize[0], 499)
         self.rightRect = pygame.Rect(self.HalfSize[0], 45, self.HalfSize[0], 499)
@@ -256,7 +266,7 @@ class Editor:
         self.pressed = False
         self.firstTime = True
 
-        self.resizeDivider(Mouse.position[0])
+        self.moveDivider(Mouse.position[0])
         
         offset = [self.fitLeftRect.width * 0.1, self.fitLeftRect.height * 0.1]
         pointRect = self.fitLeftRect.move(offset)
@@ -272,24 +282,38 @@ class Editor:
 
         self.polySurf = pygame.Surface(self.fitLeftRect.size, SRCALPHA)
         self.polySurf.set_alpha(127)
-        positions = []
-        for point in self.points:
-            positions.append(point.scale(self.surfRect1))#self.TransRect
         
         self.updateOutput()
 
     def updateOutput(self):
+        '''
+        Getting corrected surface and setting it as OutputSurf
+        '''
         positions = []
         for point in self.points:
             positions.append(point.scale(self.TransRect, True))
 
         try:
-            self.surf2 = get_corrected(positions, self.scaledSurf)
+            self.OutputSurf = get_corrected(positions, self.scaledSurf)
         except:
-            self.surf2 = self.errorSurf
+            self.OutputSurf = self.errorSurf
 
         self.updateScaledSurf()
-        
+
+    def SaveOutput(self, path):
+        '''
+        Saves corrected image in the original resolution
+        '''
+        positions = []
+        for point in self.points:
+            positions.append(point.scale(self.surfRect1, True))
+
+        try:
+            corrected = get_corrected(positions, self.surf)
+            pygame.image.save(corrected, path)
+        except:
+            print('error correcting the image')
+
     def draw(self, screen):
         if self.divider.collidepoint(Mouse.position):
             self.hovered = True
@@ -298,10 +322,10 @@ class Editor:
             self.hovered = False
 
         if self.pressed:
-            self.resizeDivider(Mouse.position[0])
+            self.moveDivider(Mouse.position[0])
 
-        screen.blit(self.Surf1Scaled, self.fitLeftRect.topleft)
-        screen.blit(self.Surf2Scaled, self.fitRightRect.topleft)
+        screen.blit(self.SurfScaled, self.fitLeftRect.topleft)
+        screen.blit(self.OutputScaled, self.fitRightRect.topleft)
 
         positions = []
         update = False
@@ -329,7 +353,7 @@ class Editor:
         position2 = (self.divider.centerx, self.ScreenSize[1])
         pygame.draw.line(screen, self.borderColor, position1, position2, 5)
 
-    def resizeDivider(self, xPos):
+    def moveDivider(self, xPos):
         Mouse.resize = True
         if self.firstTime:
             self.divider.centerx = self.HalfSize[0]
@@ -351,19 +375,19 @@ class Editor:
         self.updateScaledSurf()
 
     def updateScaledSurf(self):
-        self.surfRect1 = self.surf1.get_rect()
-        self.surfRect2 = self.surf2.get_rect()
+        self.surfRect1 = self.surf.get_rect()
+        self.surfRect2 = self.OutputSurf.get_rect()
 
         if self.surfRect2.size == (0, 0):
             #handling 0 size error
-            self.surf2 = self.errorSurf
+            self.OutputSurf = self.errorSurf
             self.surfRect2 = self.errorRect  
 
         self.fitLeftRect = self.surfRect1.fit(self.leftRect)
         self.fitRightRect = self.surfRect2.fit(self.rightRect)
 
-        self.Surf1Scaled = pygame.transform.scale(self.surf1, self.fitLeftRect.size)
-        self.Surf2Scaled = pygame.transform.scale(self.surf2, self.fitRightRect.size)
+        self.SurfScaled = pygame.transform.scale(self.surf, self.fitLeftRect.size)
+        self.OutputScaled = pygame.transform.scale(self.OutputSurf, self.fitRightRect.size)
 
     def resize(self, size):
         self.ScreenSize = size
@@ -374,7 +398,7 @@ class Editor:
         self.rightRect.x = self.HalfSize[0]
         self.rightRect.size = (self.HalfSize[0], self.ScreenSize[1] - 45)
 
-        self.resizeDivider(self.HalfSize[0])
+        self.moveDivider(self.HalfSize[0])
 
         self.divider.centerx = self.HalfSize[0]
 
@@ -387,21 +411,19 @@ class Editor:
         if event.type == MOUSEBUTTONUP:
             if event.button == 1:
                 self.pressed = False
-        
+
         for point in self.points:
             point.handle_event(event, self.points)
 
 
 class Interface:
     BgColor = pygame.Color(39, 39, 56)
-    SideBarColor = pygame.Color(60, 60, 60)
-    BorderColor = pygame.Color(30, 30, 30) 
     def __init__(self):
         self.size = (960, 540)
         self.surface = pygame.Surface(self.size)
-        self.Toolbar = Toolbar(self.surface)
 
         self.Editor = Editor(self.size)
+        self.Toolbar = Toolbar(self.surface, self.Editor)
 
     def draw(self, screen):
         self.surface.fill(self.BgColor)

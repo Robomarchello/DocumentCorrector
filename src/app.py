@@ -13,7 +13,7 @@ class App():
         self.screen = pygame.display.set_mode(ScreenSize, RESIZABLE)
         pygame.display.set_caption(caption)
 
-        self.surface = pygame.image.load('src/assets/distorted.png').convert()
+        self.surface = pygame.image.load('src/assets/template.png').convert()
         self.copy = self.surface.copy()
 
         self.interface = Interface()
