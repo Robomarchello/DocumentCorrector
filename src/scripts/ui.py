@@ -6,16 +6,45 @@ from .corrector import get_corrected
 from math import sqrt
 import json
 from os import path
+from time import perf_counter
 
 pygame.init()
 
 
 class Alert:
-    def __init__(self, text, color, frames):
-        pass
+    font = pygame.font.Font('src/assets/font.ttf', 24)
+    def __init__(self, text, color, textColor, frames, ScreenSize):
+        self.ScreenSize = ScreenSize
+
+        self.currentFrame = 0
+        self.frames = frames
+        
+        self.remove = False
+
+        self.color = color
+        self.textColor = textColor
+
+        self.render = self.font.render(text, True, self.textColor)
+        self.rect = self.render.get_rect()
+        self.rect.centerx = self.ScreenSize[0] // 2
+        self.rect.y = self.ScreenSize[1] - self.rect.height - 15
+
+        self.yAnim = 0
 
     def draw(self, screen):
-        pass
+        pygame.draw.rect(screen, self.color, self.rect)
+        screen.blit(self.render, self.rect.topleft)
+
+        if self.currentFrame < self.frames:
+            self.currentFrame += 1
+        else:
+            self.remove = True
+
+    def resize(self, ScreenSize):
+        self.ScreenSize = ScreenSize
+
+        self.rect.centerx = self.ScreenSize[0] // 2
+        self.rect.y = self.ScreenSize[1] - self.rect.height - 15
 
 
 class Button:
@@ -61,16 +90,16 @@ class Button:
 
 
 class Toolbar:
-    def __init__(self, screen, editor):
+    def __init__(self, screen, editor, alerts):
         self.screen = screen
-        size = screen.get_size()
+        self.size = screen.get_size()
 
         self.borderColor = pygame.Color(28, 28, 35)
         self.BgColor = pygame.Color(39, 39, 56)
         self.hoverColor = pygame.Color(50, 50, 70)
         self.white = pygame.Color('white')
 
-        self.border = pygame.Rect(0, 0, size[0], 42)
+        self.border = pygame.Rect(0, 0, self.size[0], 42)
 
         self.icon = pygame.image.load('src/assets/logoIcon.png').convert_alpha()
         self.iconRect = self.icon.get_rect(topleft=(9, 7))
@@ -90,24 +119,46 @@ class Toolbar:
 
         self.editor = editor
 
+        self.alerts = alerts
+
     def load(self):
-        print('load image, partner')
+        self.alerts.append(
+            Alert(
+                'Drag And Drop Image To Load It', (50, 50, 65),
+                (125, 125, 140), 120, self.size
+            )
+        )
 
     def save(self):
+        start = perf_counter()
         self.editor.SaveOutput('corrected.png')
-
-        print('Output Saved!')
+        time = round(perf_counter() - start, 3)
+        self.alerts.append(
+            Alert(
+                f'Image Saved! Took {time}s', (50, 50, 65),
+                (125, 125, 140), 120, self.size
+            )
+        )
 
     def copy(self):
+        start = perf_counter()
         self.editor.SaveOutput('src/assets/ToClipboard.bmp')
 
         with open('src/assets/ToClipboard.bmp', 'rb') as file:
             pygame.scrap.put(SCRAP_BMP, file.read())
 
-        print('Copied!')
+        time = round(perf_counter() - start, 3)
+
+        self.alerts.append(
+            Alert(
+                f'Image Copied! Took {time}s', (50, 50, 65),
+                (125, 125, 140), 120, self.size
+            )
+        )
 
     def resize(self, size):
-        self.border.width = size[0]
+        self.size = size
+        self.border.width = self.size[0]
         
     def draw(self, screen):
         pos = [self.border.bottomleft, self.border.bottomright]
@@ -269,7 +320,6 @@ class Editor:
         else:
             with open('config.json', 'w') as config:
                 json.dump(ResDict, config)
-
 
         #Scaling image to self.resolution to size to work at higher fps
         self.TransRect = self.surf.get_rect().fit(self.resolution)
@@ -452,16 +502,31 @@ class Interface:
         self.size = (960, 540)
         self.surface = pygame.Surface(self.size)
 
+        self.alerts = []
+        self.maxAlerts = 5
+
         self.Editor = Editor(self.size)
-        self.Toolbar = Toolbar(self.surface, self.Editor)
+        self.Toolbar = Toolbar(self.surface, self.Editor, self.alerts)
 
     def draw(self, screen):
         self.surface.fill(self.BgColor)
 
         self.Toolbar.draw(self.surface)
         self.Editor.draw(self.surface)
+
+        self.handle_alerts(self.surface)
         
         screen.blit(self.surface, (0, 0))
+
+    def handle_alerts(self, screen):
+        for alert in self.alerts:
+            alert.draw(screen)
+
+            if alert.remove:
+                self.alerts.remove(alert)
+
+        if len(self.alerts) > self.maxAlerts:
+            self.alerts.pop(0)
 
     def handle_event(self, event):
         if event.type == VIDEORESIZE:
@@ -470,5 +535,8 @@ class Interface:
             self.Toolbar.resize(self.size)
             self.Editor.resize(self.size)
 
+            for alert in self.alerts:
+                alert.resize(self.size)
+        
         self.Editor.handle_event(event)
         self.Toolbar.handle_event(event)
