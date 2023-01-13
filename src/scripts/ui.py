@@ -5,8 +5,17 @@ from .mouse import Mouse
 from .corrector import get_corrected
 from math import sqrt
 import json
+from os import path
 
 pygame.init()
+
+
+class Alert:
+    def __init__(self, text, color, frames):
+        pass
+
+    def draw(self, screen):
+        pass
 
 
 class Button:
@@ -86,7 +95,7 @@ class Toolbar:
 
     def save(self):
         self.editor.SaveOutput('corrected.png')
-        
+
         print('Output Saved!')
 
     def copy(self):
@@ -250,9 +259,20 @@ class Editor:
         self.errorSurf = pygame.image.load('src/assets/error.png').convert()
         self.errorRect = self.errorSurf.get_rect()
 
-        #Scaling image to size to work at higher fps
-        resolution = pygame.Rect(0, 0, 768, 768)
-        self.TransRect = self.surf.get_rect().fit(resolution)
+        self.resolution = pygame.Rect(0, 0, 768, 768)
+        ResDict = {'resolution': self.resolution.size}
+
+        if path.isfile('config.json'):
+            with open('config.json', 'r') as config:
+                ResDict = json.load(config)
+                self.resolution.size = ResDict['resolution']
+        else:
+            with open('config.json', 'w') as config:
+                json.dump(ResDict, config)
+
+
+        #Scaling image to self.resolution to size to work at higher fps
+        self.TransRect = self.surf.get_rect().fit(self.resolution)
         self.scaledSurf = pygame.transform.scale(self.surf, self.TransRect.size)
 
         self.surfRect1 = self.surf.get_rect()
@@ -313,6 +333,13 @@ class Editor:
             pygame.image.save(corrected, path)
         except:
             print('error correcting the image')
+
+    def LoadImage(self, path):
+        self.surf = pygame.image.load(path).convert()#.convert_alpha()
+        self.TransRect = self.surf.get_rect().fit(self.resolution)
+        self.scaledSurf = pygame.transform.scale(self.surf, self.TransRect.size)
+
+        self.updateOutput()
 
     def draw(self, screen):
         if self.divider.collidepoint(Mouse.position):
@@ -415,6 +442,9 @@ class Editor:
         for point in self.points:
             point.handle_event(event, self.points)
 
+        if event.type == DROPFILE:
+            self.LoadImage(event.file)
+            
 
 class Interface:
     BgColor = pygame.Color(39, 39, 56)
@@ -439,9 +469,6 @@ class Interface:
             self.surface = pygame.Surface(self.size)
             self.Toolbar.resize(self.size)
             self.Editor.resize(self.size)
-
-        if event.type == DROPFILE:
-            print(event)
 
         self.Editor.handle_event(event)
         self.Toolbar.handle_event(event)
