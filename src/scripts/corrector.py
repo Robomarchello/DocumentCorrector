@@ -1,13 +1,7 @@
-'''
-Maybe web version with file uploading?
-https://pygame-web.github.io/wiki/pygbag-code/
-My optional task for now is to make it realtime
-'''
 import pygame
 from pygame.locals import *
 from pygame.math import Vector2
 import numpy
-from time import perf_counter
 
 
 def get_corrected(points, surface):
@@ -26,7 +20,6 @@ def get_corrected(points, surface):
     )
     CorSizeYX = (CorSize[1], CorSize[0])
 
-    #start = perf_counter()
     x = numpy.linspace(1.0, 0.0, CorSize[0])
     y = numpy.linspace(0.0, 1.0, CorSize[1])
 
@@ -57,9 +50,7 @@ def get_corrected(points, surface):
     corrected = pixels[xPoses, yPoses].reshape(CorSizeYX)
     corrected = numpy.rot90(corrected)
 
-    surf = pygame.Surface(CorSize)
+    surf = pygame.Surface(CorSize)#, pygame.SRCALPHA)
     pygame.surfarray.blit_array(surf, corrected)
-
-    #print(perf_counter() - start)
 
     return surf

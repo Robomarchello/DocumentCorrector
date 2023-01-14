@@ -14,7 +14,7 @@ pygame.init()
 class Alert:
     font = pygame.font.Font('src/assets/font.ttf', 24)
     def __init__(self, text, color, textColor, frames, ScreenSize):
-        #Draw any text messages on to screen
+        #Draw any text messages onto screen
         self.ScreenSize = ScreenSize
 
         self.currentFrame = 0
@@ -86,105 +86,6 @@ class Button:
         if event.type == MOUSEBUTTONUP:
             if event.button == 1:
                 self.clicked = False
-
-
-class Toolbar:
-    def __init__(self, screen, editor, alerts):
-        self.screen = screen
-        self.size = screen.get_size()
-
-        self.borderColor = pygame.Color(28, 28, 35)
-        self.BgColor = pygame.Color(39, 39, 56)
-        self.hoverColor = pygame.Color(50, 50, 70)
-        self.white = pygame.Color('white')
-
-        self.border = pygame.Rect(0, 0, self.size[0], 42)
-
-        self.icon = pygame.image.load('src/assets/logoIcon.png').convert_alpha()
-        self.iconRect = self.icon.get_rect(topleft=(9, 7))
-        
-        self.buttonFont = pygame.font.Font('src/assets/font.ttf', 16)
-        self.FileRect = pygame.Rect(50, 5, 38, 32) 
-        self.ChooseFile = Button(self.FileRect, self.buttonFont, 'Load',
-                            self.white, self.BgColor, self.hoverColor, self.load)
-
-        self.SaveRect = pygame.Rect(103, 5, 45, 32)
-        self.SaveBtn = Button(self.SaveRect, self.buttonFont, 'Save', self.white,
-                              self.BgColor, self.hoverColor, self.save)
-
-        self.CopyRect = pygame.Rect(163, 5, 40, 32)#137
-        self.CopyBtn = Button(self.CopyRect, self.buttonFont, 'Copy',
-                            self.white, self.BgColor, self.hoverColor, self.copy)
-
-        self.editor = editor
-
-        self.alerts = alerts
-
-    def load(self):
-        self.alerts.append(
-            Alert(
-                'Drag And Drop Image To Load It', (50, 50, 65),
-                (125, 125, 140), 120, self.size
-            )
-        )
-
-    def save(self):
-        #don't know if try except is good way to do this stuff🤔
-        try:
-            start = perf_counter()
-            self.editor.SaveOutput('corrected.png')
-            time = round(perf_counter() - start, 3)
-            self.alerts.append(
-                Alert(
-                    f'Image Saved! Took {time}s', (50, 50, 65),
-                    (125, 125, 140), 120, self.size
-                )
-            )
-        except:
-            self.alerts.append(
-                Alert(
-                    'Can\'t save the image', (50, 50, 65),
-                    (125, 125, 140), 120, self.size
-                )
-            )
-
-    def copy(self):
-        start = perf_counter()
-        self.editor.SaveOutput('src/assets/ToClipboard.bmp')
-
-        with open('src/assets/ToClipboard.bmp', 'rb') as file:
-            pygame.scrap.put(SCRAP_BMP, file.read())
-
-        time = round(perf_counter() - start, 3)
-
-        self.alerts.append(
-            Alert(
-                f'Image Copied! Took {time}s', (50, 50, 65),
-                (125, 125, 140), 120, self.size
-            )
-        )
-
-    def resize(self, size):
-        self.size = size
-        self.border.width = self.size[0]
-        
-    def draw(self, screen):
-        pos = [self.border.bottomleft, self.border.bottomright]
-        pygame.draw.rect(screen, self.BgColor, self.border)
-
-        screen.blit(self.icon, self.iconRect.topleft)
-
-        self.ChooseFile.draw(screen)
-        self.SaveBtn.draw(screen)
-        self.CopyBtn.draw(screen)
-
-        pygame.draw.rect(screen, self.borderColor, self.border, width=2)
-        pygame.draw.line(screen, self.borderColor, pos[0], pos[1], 4)
-
-    def handle_event(self, event):
-        self.ChooseFile.handle_event(event)
-        self.SaveBtn.handle_event(event)
-        self.CopyBtn.handle_event(event)
 
 
 class Point:
@@ -302,6 +203,105 @@ class Point:
             self.pressed = False
 
 
+class Toolbar:
+    def __init__(self, screen, editor, alerts):
+        self.screen = screen
+        self.size = screen.get_size()
+
+        self.borderColor = pygame.Color(28, 28, 35)
+        self.BgColor = pygame.Color(39, 39, 56)
+        self.hoverColor = pygame.Color(50, 50, 70)
+        self.white = pygame.Color('white')
+
+        self.border = pygame.Rect(0, 0, self.size[0], 42)
+
+        self.icon = pygame.image.load('src/assets/logoIcon.png').convert_alpha()
+        self.iconRect = self.icon.get_rect(topleft=(9, 7))
+        
+        self.buttonFont = pygame.font.Font('src/assets/font.ttf', 16)
+        self.FileRect = pygame.Rect(50, 5, 38, 32) 
+        self.ChooseFile = Button(self.FileRect, self.buttonFont, 'Load',
+                            self.white, self.BgColor, self.hoverColor, self.load)
+
+        self.SaveRect = pygame.Rect(103, 5, 45, 32)
+        self.SaveBtn = Button(self.SaveRect, self.buttonFont, 'Save', self.white,
+                              self.BgColor, self.hoverColor, self.save)
+
+        self.CopyRect = pygame.Rect(163, 5, 40, 32)#137
+        self.CopyBtn = Button(self.CopyRect, self.buttonFont, 'Copy',
+                            self.white, self.BgColor, self.hoverColor, self.copy)
+
+        self.editor = editor
+
+        self.alerts = alerts
+
+    def load(self):
+        self.alerts.append(
+            Alert(
+                'Drag And Drop Image To Load It', (50, 50, 65),
+                (125, 125, 140), 120, self.size
+            )
+        )
+
+    def save(self):
+        #don't know if try except is good way to do this stuff🤔
+        try:
+            start = perf_counter()
+            self.editor.SaveOutput('corrected.png')
+            time = round(perf_counter() - start, 3)
+            self.alerts.append(
+                Alert(
+                    f'Image Saved! Took {time}s', (50, 50, 65),
+                    (125, 125, 140), 120, self.size
+                )
+            )
+        except:
+            self.alerts.append(
+                Alert(
+                    'Can\'t save the image', (50, 50, 65),
+                    (125, 125, 140), 120, self.size
+                )
+            )
+
+    def copy(self):
+        start = perf_counter()
+        self.editor.SaveOutput('src/assets/ToClipboard.bmp')
+
+        with open('src/assets/ToClipboard.bmp', 'rb') as file:
+            pygame.scrap.put(SCRAP_BMP, file.read())
+
+        time = round(perf_counter() - start, 3)
+
+        self.alerts.append(
+            Alert(
+                f'Image Copied! Took {time}s', (50, 50, 65),
+                (125, 125, 140), 120, self.size
+            )
+        )
+
+    def resize(self, size):
+        self.size = size
+        self.border.width = self.size[0]
+        
+    def draw(self, screen):
+        pos = [self.border.bottomleft, self.border.bottomright]
+        pygame.draw.rect(screen, self.BgColor, self.border)
+
+        screen.blit(self.icon, self.iconRect.topleft)
+
+        self.ChooseFile.draw(screen)
+        self.SaveBtn.draw(screen)
+        self.CopyBtn.draw(screen)
+
+        pygame.draw.rect(screen, self.borderColor, self.border, width=2)
+        pygame.draw.line(screen, self.borderColor, pos[0], pos[1], 4)
+
+    def handle_event(self, event):
+        self.ChooseFile.handle_event(event)
+        self.SaveBtn.handle_event(event)
+        self.CopyBtn.handle_event(event)
+
+
 class Editor:
     def __init__(self, ScreenSize, alerts):
         #initializing here because pygame.scrap requires window
@@ -393,7 +393,7 @@ class Editor:
 
     def LoadImage(self, path):
         try:
-            self.surf = pygame.image.load(path).convert()#.convert_alpha()
+            self.surf = pygame.image.load(path).convert()
         except:
             self.alerts.append(
                 Alert(

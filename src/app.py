@@ -3,7 +3,6 @@ from pygame.locals import *
 from .scripts.ui import Interface
 from .scripts.mouse import Mouse
 
-
 pygame.init()
 
 
@@ -44,8 +43,6 @@ class App():
 
                 for event_handler in self.event_handlers:
                     event_handler.handle_event(event)
-
-            #pygame.display.set_caption(str(round(self.clock.get_fps())))
 
             Mouse.update()
             pygame.display.update()
