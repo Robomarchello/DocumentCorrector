@@ -14,6 +14,7 @@ pygame.init()
 class Alert:
     font = pygame.font.Font('src/assets/font.ttf', 24)
     def __init__(self, text, color, textColor, frames, ScreenSize):
+        #Draw any text messages on to screen
         self.ScreenSize = ScreenSize
 
         self.currentFrame = 0
@@ -28,8 +29,6 @@ class Alert:
         self.rect = self.render.get_rect()
         self.rect.centerx = self.ScreenSize[0] // 2
         self.rect.y = self.ScreenSize[1] - self.rect.height - 15
-
-        self.yAnim = 0
 
     def draw(self, screen):
         pygame.draw.rect(screen, self.color, self.rect)
@@ -130,15 +129,24 @@ class Toolbar:
         )
 
     def save(self):
-        start = perf_counter()
-        self.editor.SaveOutput('corrected.png')
-        time = round(perf_counter() - start, 3)
-        self.alerts.append(
-            Alert(
-                f'Image Saved! Took {time}s', (50, 50, 65),
-                (125, 125, 140), 120, self.size
+        #don't know if try except is good way to do this stuff🤔
+        try:
+            start = perf_counter()
+            self.editor.SaveOutput('corrected.png')
+            time = round(perf_counter() - start, 3)
+            self.alerts.append(
+                Alert(
+                    f'Image Saved! Took {time}s', (50, 50, 65),
+                    (125, 125, 140), 120, self.size
+                )
             )
-        )
+        except:
+            self.alerts.append(
+                Alert(
+                    'Can\'t save the image', (50, 50, 65),
+                    (125, 125, 140), 120, self.size
+                )
+            )
 
     def copy(self):
         start = perf_counter()
@@ -295,12 +303,14 @@ class Point:
 
 
 class Editor:
-    def __init__(self, ScreenSize):
+    def __init__(self, ScreenSize, alerts):
         #initializing here because pygame.scrap requires window
         pygame.scrap.init()
 
         self.ScreenSize = ScreenSize
         self.HalfSize = (ScreenSize[0] // 2, ScreenSize[1] // 2)
+
+        self.alerts = alerts
 
         self.borderColor = pygame.Color(28, 28, 41)
 
@@ -378,14 +388,20 @@ class Editor:
         for point in self.points:
             positions.append(point.scale(self.surfRect1, True))
 
-        try:
-            corrected = get_corrected(positions, self.surf)
-            pygame.image.save(corrected, path)
-        except:
-            print('error correcting the image')
+        corrected = get_corrected(positions, self.surf)
+        pygame.image.save(corrected, path)
 
     def LoadImage(self, path):
-        self.surf = pygame.image.load(path).convert()#.convert_alpha()
+        try:
+            self.surf = pygame.image.load(path).convert()#.convert_alpha()
+        except:
+            self.alerts.append(
+                Alert(
+                    'File Format Unsupported', (50, 50, 65),
+                    (125, 125, 140), 120, self.ScreenSize
+                )
+            )
+
         self.TransRect = self.surf.get_rect().fit(self.resolution)
         self.scaledSurf = pygame.transform.scale(self.surf, self.TransRect.size)
 
@@ -505,7 +521,7 @@ class Interface:
         self.alerts = []
         self.maxAlerts = 5
 
-        self.Editor = Editor(self.size)
+        self.Editor = Editor(self.size, self.alerts)
         self.Toolbar = Toolbar(self.surface, self.Editor, self.alerts)
 
     def draw(self, screen):

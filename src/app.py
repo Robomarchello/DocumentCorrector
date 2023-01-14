@@ -3,6 +3,7 @@ from pygame.locals import *
 from .scripts.ui import Interface
 from .scripts.mouse import Mouse
 
+
 pygame.init()
 
 

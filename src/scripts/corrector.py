@@ -26,7 +26,7 @@ def get_corrected(points, surface):
     )
     CorSizeYX = (CorSize[1], CorSize[0])
 
-    start = perf_counter()
+    #start = perf_counter()
     x = numpy.linspace(1.0, 0.0, CorSize[0])
     y = numpy.linspace(0.0, 1.0, CorSize[1])
 
@@ -60,6 +60,6 @@ def get_corrected(points, surface):
     surf = pygame.Surface(CorSize)
     pygame.surfarray.blit_array(surf, corrected)
 
-    print(perf_counter() - start)
+    #print(perf_counter() - start)
 
     return surf
