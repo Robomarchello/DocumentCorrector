@@ -1,3 +1,6 @@
+'''
+would be cool to port this to web using pygbag
+'''
 import pygame
 from pygame.locals import *
 from .scripts.ui import Interface

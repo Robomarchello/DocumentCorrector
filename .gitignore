@@ -1,3 +1,5 @@
 .vscode
 debugging
 __pycache__
+main.build
+main.dist
